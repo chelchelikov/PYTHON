@@ -1,0 +1,136 @@
+# Лабораторная работа №20. Вариант 5. Ресторан: контейнеризация всей системы.
+#   cp .env.example .env
+#   docker compose up --build -d                     — запуск
+#   docker compose --profile test run --rm api-tests — автоматическая проверка API
+
+x-service: &service
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "3" }
+
+x-db-healthcheck: &db-healthcheck
+  interval: 5s
+  timeout: 3s
+  retries: 10
+
+services:
+  gateway:
+    <<: *service
+    build: ./gateway
+    image: restaurant/gateway:latest
+    ports:
+      - "${GATEWAY_PORT:-8000}:8000"
+    environment:
+      MENU_SERVICE_URL: http://menu-service:8000
+      ORDER_SERVICE_URL: http://order-service:8000
+      DELIVERY_SERVICE_URL: http://delivery-service:8000
+      CB_RECOVERY_TIMEOUT: "15"
+    depends_on:
+      menu-service: { condition: service_healthy }
+      order-service: { condition: service_healthy }
+      delivery-service: { condition: service_healthy }
+    networks: [frontend, backend]
+
+  menu-service:
+    <<: *service
+    build: ./menu-service
+    image: restaurant/menu-service:latest
+    environment:
+      DATABASE_URL: postgresql+psycopg://menu:${MENU_DB_PASSWORD:?задайте в .env}@menu-db:5432/menu_db
+    depends_on:
+      menu-db: { condition: service_healthy }
+    networks: [backend, menu-net]
+
+  order-service:
+    <<: *service
+    build: ./order-service
+    image: restaurant/order-service:latest
+    environment:
+      DATABASE_URL: postgresql+psycopg://orders:${ORDERS_DB_PASSWORD:?задайте в .env}@orders-db:5432/orders_db
+      MENU_SERVICE_URL: http://menu-service:8000
+      BROKER_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD:?задайте в .env}@broker:5672/
+    depends_on:
+      orders-db: { condition: service_healthy }
+      broker: { condition: service_healthy }
+    networks: [backend, orders-net]
+
+  delivery-service:
+    <<: *service
+    build: ./delivery-service
+    image: restaurant/delivery-service:latest
+    environment:
+      DATABASE_URL: postgresql+psycopg://delivery:${DELIVERY_DB_PASSWORD:?задайте в .env}@delivery-db:5432/delivery_db
+      BROKER_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@broker:5672/
+    depends_on:
+      delivery-db: { condition: service_healthy }
+      broker: { condition: service_healthy }
+    networks: [backend, delivery-net]
+
+  menu-db:
+    <<: *service
+    image: postgres:16
+    environment:
+      POSTGRES_USER: menu
+      POSTGRES_PASSWORD: ${MENU_DB_PASSWORD}
+      POSTGRES_DB: menu_db
+    volumes: [menu-data:/var/lib/postgresql/data]
+    healthcheck: { <<: *db-healthcheck, test: ["CMD-SHELL", "pg_isready -U menu -d menu_db"] }
+    networks: [menu-net]
+
+  orders-db:
+    <<: *service
+    image: postgres:16
+    environment:
+      POSTGRES_USER: orders
+      POSTGRES_PASSWORD: ${ORDERS_DB_PASSWORD}
+      POSTGRES_DB: orders_db
+    volumes: [orders-data:/var/lib/postgresql/data]
+    healthcheck: { <<: *db-healthcheck, test: ["CMD-SHELL", "pg_isready -U orders -d orders_db"] }
+    networks: [orders-net]
+
+  delivery-db:
+    <<: *service
+    image: postgres:16
+    environment:
+      POSTGRES_USER: delivery
+      POSTGRES_PASSWORD: ${DELIVERY_DB_PASSWORD}
+      POSTGRES_DB: delivery_db
+    volumes: [delivery-data:/var/lib/postgresql/data]
+    healthcheck: { <<: *db-healthcheck, test: ["CMD-SHELL", "pg_isready -U delivery -d delivery_db"] }
+    networks: [delivery-net]
+
+  broker:
+    <<: *service
+    image: rabbitmq:3.13-management
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "${RABBITMQ_UI_PORT:-15672}:15672"
+    volumes: [broker-data:/var/lib/rabbitmq]
+    healthcheck: { test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"], interval: 10s, retries: 10 }
+    networks: [backend]
+
+  # Автоматическая проверка API: запускается только по профилю test
+  api-tests:
+    build: ./api-tests
+    profiles: [test]
+    environment:
+      GATEWAY_URL: http://gateway:8000
+    depends_on:
+      gateway: { condition: service_healthy }
+    networks: [frontend]
+
+networks:
+  frontend:
+  backend:
+  menu-net:
+  orders-net:
+  delivery-net:
+
+volumes:
+  menu-data:
+  orders-data:
+  delivery-data:
+  broker-data:

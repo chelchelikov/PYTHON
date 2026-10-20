@@ -1,0 +1,85 @@
+# CI/CD для лабораторной работы №20 (микросервисы ресторана).
+# Этапы: Checkout → Python → Install → Lint → Pytest (+покрытие) → Docker build →
+#        запуск системы → автоматическая проверка API → проверка сохранности данных.
+name: lab20 CI
+
+on:
+  push:
+    paths: ["lab20_Burund/**", ".github/workflows/lab20-ci.yml"]
+  pull_request:
+    paths: ["lab20_Burund/**", ".github/workflows/lab20-ci.yml"]
+  workflow_dispatch:
+
+jobs:
+  lint-test:
+    name: lint + tests (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [menu-service, order-service, delivery-service, gateway]
+    defaults:
+      run:
+        working-directory: lab20_Burund/${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: lab20_Burund/${{ matrix.service }}/requirements*.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Tests with coverage
+        run: pytest -v --cov=app --cov-report=term-missing --cov-fail-under=80
+
+  docker:
+    name: docker build + API check
+    needs: lint-test          # без зелёных тестов образы не собираются
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lab20_Burund
+    env:
+      # Для CI используются тестовые значения; в реальном проекте — Secrets репозитория
+      MENU_DB_PASSWORD: ${{ secrets.MENU_DB_PASSWORD || 'ci-menu' }}
+      ORDERS_DB_PASSWORD: ${{ secrets.ORDERS_DB_PASSWORD || 'ci-orders' }}
+      DELIVERY_DB_PASSWORD: ${{ secrets.DELIVERY_DB_PASSWORD || 'ci-delivery' }}
+      RABBITMQ_USER: restaurant
+      RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD || 'ci-rabbit' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Docker build
+        run: docker compose build
+
+      - name: Start system
+        run: docker compose up -d --wait --wait-timeout 180
+
+      - name: API check
+        run: docker compose --profile test run --rm api-tests
+
+      - name: Data persists after restart
+        run: |
+          NAME="persist-$GITHUB_RUN_ID"
+          ID=$(curl -sf -X POST localhost:8000/api/dishes -H 'Content-Type: application/json' \
+               -d "{\"name\": \"$NAME\", \"category\": \"drink\", \"price\": 99}" | jq .id)
+          docker compose down
+          docker compose up -d --wait --wait-timeout 180
+          curl -sf "localhost:8000/api/dishes/$ID" | jq -e ".name == \"$NAME\""
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --tail 100
+
+      - name: Cleanup
+        if: always()
+        run: docker compose --profile test down -v
