@@ -1,0 +1,91 @@
+# Лабораторная работа №19. Вариант 5. Ресторан: gateway + 3 сервиса + 3 БД + RabbitMQ.
+# Запуск: cp .env.example .env && docker compose up --build
+
+services:
+  gateway:
+    build: ./gateway
+    ports:
+      - "8000:8000"
+    environment:
+      MENU_SERVICE_URL: http://menu-service:8000
+      ORDER_SERVICE_URL: http://order-service:8000
+      DELIVERY_SERVICE_URL: http://delivery-service:8000
+      CB_RECOVERY_TIMEOUT: "15"
+    depends_on:
+      menu-service: { condition: service_healthy }
+      order-service: { condition: service_healthy }
+      delivery-service: { condition: service_healthy }
+    networks: [frontend, backend]
+
+  menu-service:
+    build: ./menu-service
+    environment:
+      DATABASE_URL: postgresql+psycopg://menu:${MENU_DB_PASSWORD}@menu-db:5432/menu_db
+    depends_on:
+      menu-db: { condition: service_healthy }
+    networks: [backend, menu-net]
+
+  order-service:
+    build: ./order-service
+    environment:
+      DATABASE_URL: postgresql+psycopg://orders:${ORDERS_DB_PASSWORD}@orders-db:5432/orders_db
+      MENU_SERVICE_URL: http://menu-service:8000
+      BROKER_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@broker:5672/
+    depends_on:
+      orders-db: { condition: service_healthy }
+      broker: { condition: service_healthy }
+    networks: [backend, orders-net]
+
+  delivery-service:
+    build: ./delivery-service
+    environment:
+      DATABASE_URL: postgresql+psycopg://delivery:${DELIVERY_DB_PASSWORD}@delivery-db:5432/delivery_db
+      BROKER_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@broker:5672/
+    depends_on:
+      delivery-db: { condition: service_healthy }
+      broker: { condition: service_healthy }
+    networks: [backend, delivery-net]
+
+  # Database per Service: у каждого сервиса своя БД в отдельной сети
+  menu-db:
+    image: postgres:16
+    environment: { POSTGRES_USER: menu, POSTGRES_PASSWORD: "${MENU_DB_PASSWORD}", POSTGRES_DB: menu_db }
+    volumes: [menu-data:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U menu"], interval: 5s, retries: 10 }
+    networks: [menu-net]
+
+  orders-db:
+    image: postgres:16
+    environment: { POSTGRES_USER: orders, POSTGRES_PASSWORD: "${ORDERS_DB_PASSWORD}", POSTGRES_DB: orders_db }
+    volumes: [orders-data:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U orders"], interval: 5s, retries: 10 }
+    networks: [orders-net]
+
+  delivery-db:
+    image: postgres:16
+    environment: { POSTGRES_USER: delivery, POSTGRES_PASSWORD: "${DELIVERY_DB_PASSWORD}", POSTGRES_DB: delivery_db }
+    volumes: [delivery-data:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U delivery"], interval: 5s, retries: 10 }
+    networks: [delivery-net]
+
+  broker:
+    image: rabbitmq:3.13-management
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "15672:15672"   # веб-интерфейс RabbitMQ
+    healthcheck: { test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"], interval: 10s, retries: 10 }
+    networks: [backend]
+
+networks:
+  frontend:
+  backend:
+  menu-net:
+  orders-net:
+  delivery-net:
+
+volumes:
+  menu-data:
+  orders-data:
+  delivery-data:
