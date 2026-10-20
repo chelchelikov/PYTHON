@@ -1,0 +1,8 @@
+/* Стили страницы номеров отеля (статический ресурс для CDN) */
+body { font-family: Arial, sans-serif; margin: 0; background: #f6f4ef; color: #222; }
+header { background: #2c3e50; color: #fff; padding: 16px 24px; }
+.rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; padding: 24px; }
+.room { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0, 0, 0, .1); overflow: hidden; }
+.room img { width: 100%; display: block; }
+.room .info { padding: 12px; }
+.price { font-weight: bold; color: #c0392b; }
