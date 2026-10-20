@@ -22,10 +22,37 @@ erDiagram
     customers ||--o{ orders : "делает"
     orders ||--|{ order_items : "содержит"
     dishes ||--o{ order_items : "входит в"
-    customers { int id PK; varchar name; varchar phone UK; varchar email UK; timestamp created_at }
-    dishes { int id PK; varchar name UK; enum category; numeric price; int weight_g; int portions_left; bool is_available }
-    orders { int id PK; int customer_id FK; int table_number; enum status; numeric total; timestamp created_at }
-    order_items { int id PK; int order_id FK; int dish_id FK; int quantity; numeric price }
+    customers {
+        int id PK
+        varchar name
+        varchar phone UK
+        varchar email UK
+        timestamp created_at
+    }
+    dishes {
+        int id PK
+        varchar name UK
+        enum category
+        numeric price
+        int weight_g
+        int portions_left
+        bool is_available
+    }
+    orders {
+        int id PK
+        int customer_id FK
+        int table_number
+        enum status
+        numeric total
+        timestamp created_at
+    }
+    order_items {
+        int id PK
+        int order_id FK
+        int dish_id FK
+        int quantity
+        numeric price
+    }
 ```
 
 | Таблица | Назначение | Ограничения |
