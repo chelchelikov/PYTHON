@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Заказы{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Заказы</h1>
+  <a class="button" href="{{ url_for('web.order_create') }}">+ Новый заказ</a>
+</div>
+<form class="filters" method="get">
+  <input type="search" name="search" placeholder="Имя гостя" value="{{ search }}">
+  <select name="status">
+    <option value="">Все статусы</option>
+    {% for item in statuses %}
+      <option value="{{ item.name|lower }}" {% if status == item.name|lower %}selected{% endif %}>{{ item.value }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">Показать</button>
+</form>
+<table class="table">
+  <thead><tr><th>№</th><th>Гость</th><th>Стол</th><th>Позиций</th><th>Сумма</th><th>Статус</th></tr></thead>
+  <tbody>
+  {% for order in orders %}
+    <tr>
+      <td><a href="{{ url_for('web.order_detail', order_id=order.id) }}">#{{ order.id }}</a></td>
+      <td>{{ order.customer_name }}</td>
+      <td>{{ order.table_number }}</td>
+      <td>{{ order.items|length }}</td>
+      <td class="price">{{ "%.2f"|format(order.total) }} ₽</td>
+      <td><span class="status status-{{ order.status.name|lower }}">{{ order.status.value }}</span></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="muted">Заказов нет</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

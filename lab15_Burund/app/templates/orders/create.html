@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Новый заказ{% endblock %}
+{% block content %}
+<h1>Оформление заказа</h1>
+<form class="form" method="post" id="order-form">
+  <div class="row">
+    <label>Имя гостя <input name="customer_name" required value="{{ form.get('customer_name', '') }}"></label>
+    <label>Стол № <input name="table_number" type="number" min="1" required value="{{ form.get('table_number', '') }}"></label>
+  </div>
+  {% for category in categories %}
+    {% set available = dishes|selectattr("category_id", "equalto", category.id)|list %}
+    {% if available %}
+      <h3>{{ category.name }}</h3>
+      <table class="table compact">
+        {% for dish in available %}
+          {% set field = "qty_" ~ dish.id %}
+          <tr>
+            <td>{{ dish.name }}</td>
+            <td class="price" data-price="{{ dish.price }}">{{ "%.0f"|format(dish.price) }} ₽</td>
+            <td><input class="qty" type="number" min="0" max="20" name="{{ field }}"
+                       value="{{ form.get(field) or (1 if preselected == dish.id else '') }}" placeholder="0"></td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% endif %}
+  {% endfor %}
+  <label>Комментарий <textarea name="comment" rows="2">{{ form.get('comment', '') }}</textarea></label>
+  <p class="total">Итого: <strong id="order-total">0</strong> ₽</p>
+  <button type="submit">Оформить заказ</button>
+</form>
+{% endblock %}

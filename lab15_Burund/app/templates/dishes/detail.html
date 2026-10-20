@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ dish.name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('web.dish_list') }}">← Меню</a></p>
+<article class="detail">
+  <h1>{{ dish.name }}</h1>
+  <p class="muted">Категория:
+    <a href="{{ url_for('web.category_detail', category_id=dish.category.id) }}">{{ dish.category.name }}</a></p>
+  <p>{{ dish.description or "Описание отсутствует" }}</p>
+  <dl>
+    <dt>Цена</dt><dd class="price">{{ "%.2f"|format(dish.price) }} ₽</dd>
+    <dt>Вес порции</dt><dd>{{ dish.weight_g }} г</dd>
+    <dt>Вегетарианское</dt><dd>{{ "да" if dish.is_vegetarian else "нет" }}</dd>
+    <dt>Наличие</dt><dd>{{ "в наличии" if dish.is_available else "нет в наличии" }}</dd>
+    <dt>Заказано раз</dt><dd>{{ dish.items|length }}</dd>
+  </dl>
+  <div class="buttons">
+    {% if dish.is_available %}
+      <a class="button" href="{{ url_for('web.order_create', dish=dish.id) }}">Заказать</a>
+    {% endif %}
+    <a class="button secondary" href="{{ url_for('web.dish_edit', dish_id=dish.id) }}">Изменить</a>
+    <form method="post" action="{{ url_for('web.dish_delete', dish_id=dish.id) }}" data-confirm="Удалить блюдо «{{ dish.name }}»?">
+      <button class="danger" type="submit">Удалить</button>
+    </form>
+  </div>
+</article>
+{% endblock %}

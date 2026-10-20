@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ category.name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('web.category_list') }}">← Категории</a></p>
+<h1>{{ category.name }}</h1>
+<p>{{ category.description }}</p>
+<div class="cards">
+  {% for dish in category.dishes %}
+    <a class="card" href="{{ url_for('web.dish_detail', dish_id=dish.id) }}">
+      <h3>{{ dish.name }}</h3>
+      <p>{{ dish.description }}</p>
+      <span class="price">{{ "%.0f"|format(dish.price) }} ₽</span>
+      {% if not dish.is_available %}<span class="tag tag-muted">нет в наличии</span>{% endif %}
+    </a>
+  {% else %}
+    <p class="muted">В категории пока нет блюд.</p>
+  {% endfor %}
+</div>
+<p><a class="button" href="{{ url_for('web.dish_list', category=category.id) }}">Открыть в меню с фильтром</a></p>
+{% endblock %}

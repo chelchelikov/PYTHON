@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Меню{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Меню</h1>
+  <a class="button" href="{{ url_for('web.dish_create') }}">+ Новое блюдо</a>
+</div>
+
+<form class="filters" method="get">
+  <input type="search" name="search" placeholder="Поиск по названию и описанию" value="{{ filters.search }}">
+  <select name="category">
+    <option value="">Все категории</option>
+    {% for category in categories %}
+      <option value="{{ category.id }}" {% if filters.category_id == category.id %}selected{% endif %}>{{ category.name }}</option>
+    {% endfor %}
+  </select>
+  <input type="number" name="max_price" min="0" step="10" placeholder="Цена до" value="{{ filters.max_price or '' }}">
+  <label><input type="checkbox" name="vegetarian" value="1" {% if filters.vegetarian %}checked{% endif %}> вегетарианские</label>
+  <label><input type="checkbox" name="available" value="1" {% if filters.available %}checked{% endif %}> в наличии</label>
+  <select name="sort">
+    {% for value, title in sort_options.items() %}
+      <option value="{{ value }}" {% if sort == value %}selected{% endif %}>{{ title }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">Применить</button>
+  <a href="{{ url_for('web.dish_list') }}">Сбросить</a>
+</form>
+
+<table class="table">
+  <thead><tr><th>Блюдо</th><th>Категория</th><th>Вес</th><th>Цена</th><th></th></tr></thead>
+  <tbody>
+  {% for dish in dishes %}
+    <tr class="{% if not dish.is_available %}unavailable{% endif %}">
+      <td><a href="{{ url_for('web.dish_detail', dish_id=dish.id) }}">{{ dish.name }}</a>
+        {% if dish.is_vegetarian %}<span class="tag">🌱 вег</span>{% endif %}
+        {% if not dish.is_available %}<span class="tag tag-muted">нет в наличии</span>{% endif %}</td>
+      <td><a href="{{ url_for('web.category_detail', category_id=dish.category.id) }}">{{ dish.category.name }}</a></td>
+      <td>{{ dish.weight_g }} г</td>
+      <td class="price">{{ "%.0f"|format(dish.price) }} ₽</td>
+      <td class="actions"><a href="{{ url_for('web.dish_edit', dish_id=dish.id) }}">изменить</a></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="muted">Ничего не найдено</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="muted">Найдено блюд: {{ dishes|length }}</p>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Не найдено{% endblock %}
+{% block content %}
+<section class="error-page">
+  <h1>404</h1>
+  <p>{{ message or "Такой страницы нет" }}</p>
+  <a class="button" href="{{ url_for('web.index') }}">На главную</a>
+</section>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Главная{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Ресторан «У Бурунда»</h1>
+  <p>Меню, категории блюд и оформление заказов.</p>
+  <a class="button" href="{{ url_for('web.dish_list') }}">Смотреть меню</a>
+  <a class="button secondary" href="{{ url_for('web.dish_create') }}">Добавить блюдо</a>
+</section>
+
+<h2>Категории</h2>
+<div class="cards">
+  {% for category in categories %}
+    <a class="card" href="{{ url_for('web.category_detail', category_id=category.id) }}">
+      <h3>{{ category.name }}</h3>
+      <p>{{ category.description }}</p>
+      <span class="muted">Блюд: {{ category.dishes|length }}</span>
+    </a>
+  {% endfor %}
+</div>
+
+<div class="columns">
+  <section>
+    <h2>Популярные блюда</h2>
+    <ol>
+      {% for dish, quantity in popular %}
+        <li><a href="{{ url_for('web.dish_detail', dish_id=dish.id) }}">{{ dish.name }}</a>
+          — заказано {{ quantity }} шт.</li>
+      {% else %}
+        <li class="muted">Заказов пока нет</li>
+      {% endfor %}
+    </ol>
+  </section>
+  <section>
+    <h2>Последние заказы</h2>
+    <ul>
+      {% for order in orders %}
+        <li><a href="{{ url_for('web.order_detail', order_id=order.id) }}">Заказ #{{ order.id }}</a>,
+          стол {{ order.table_number }}, {{ "%.2f"|format(order.total) }} ₽ —
+          <span class="status status-{{ order.status.name|lower }}">{{ order.status.value }}</span></li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}
