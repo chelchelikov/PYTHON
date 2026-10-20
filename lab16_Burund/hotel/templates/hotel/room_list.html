@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Номера{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Номера</h1>
+  {% if perms.hotel.add_room %}<a class="button" href="{% url 'hotel:room_create' %}">+ Новый номер</a>{% endif %}
+</div>
+<form class="filters" method="get">
+  {{ form.q }} {{ form.room_type }}
+  <label>{{ form.guests.label }} {{ form.guests }}</label>
+  <label>{{ form.max_price.label }} {{ form.max_price }}</label>
+  <label>{{ form.check_in.label }} {{ form.check_in }}</label>
+  <label>{{ form.check_out.label }} {{ form.check_out }}</label>
+  {{ form.sort }}
+  <button type="submit">Применить</button>
+  <a href="{% url 'hotel:room_list' %}">Сбросить</a>
+  {% if form.non_field_errors %}<div class="error">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+</form>
+{% if form.is_bound and form.is_valid and form.cleaned_data.check_in %}
+  <p class="muted">Свободны с {{ form.cleaned_data.check_in|date:"d.m.Y" }} по {{ form.cleaned_data.check_out|date:"d.m.Y" }}:</p>
+{% endif %}
+<table class="table">
+  <thead><tr><th>Номер</th><th>Категория</th><th>Этаж</th><th>Мест</th><th>Удобства</th><th>Цена</th><th></th></tr></thead>
+  <tbody>
+  {% for room in page_obj %}
+    <tr class="{% if room.is_under_maintenance %}unavailable{% endif %}">
+      <td><a href="{{ room.get_absolute_url }}">№{{ room.number }}</a>
+        {% if room.is_under_maintenance %}<span class="tag tag-muted">обслуживание</span>{% endif %}</td>
+      <td><a href="{{ room.room_type.get_absolute_url }}">{{ room.room_type.name }}</a></td>
+      <td>{{ room.floor }}</td>
+      <td>{{ room.capacity }}</td>
+      <td class="small">{% for a in room.amenities.all %}{{ a.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+      <td class="price">{{ room.price|floatformat:0|intcomma }} ₽</td>
+      <td class="actions">
+        <a href="{{ room.get_absolute_url }}">открыть</a>
+        {% if perms.hotel.change_room %}<a href="{% url 'hotel:room_edit' room.pk %}">изменить</a>{% endif %}
+        {% if perms.hotel.delete_room %}<a href="{% url 'hotel:room_delete' room.pk %}">удалить</a>{% endif %}
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="7" class="muted">Номера не найдены</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% include "hotel/pagination.html" %}
+{% endblock %}

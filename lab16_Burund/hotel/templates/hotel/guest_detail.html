@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}{{ guest.full_name }}{% endblock %}
+{% block content %}
+<p><a href="{% url 'hotel:guest_list' %}">← Гости</a></p>
+<h1>{{ guest.full_name }}</h1>
+<p>{{ guest.email }} · {{ guest.phone|default:"телефон не указан" }}</p>
+<h2>История бронирований</h2>
+<table class="table">
+  <thead><tr><th>№</th><th>Номер</th><th>Даты</th><th>Стоимость</th><th>Статус</th></tr></thead>
+  <tbody>
+  {% for booking in guest.bookings.all %}
+    <tr><td><a href="{{ booking.get_absolute_url }}">#{{ booking.pk }}</a></td>
+      <td><a href="{{ booking.room.get_absolute_url }}">№{{ booking.room.number }}</a></td>
+      <td>{{ booking.check_in|date:"d.m.Y" }} — {{ booking.check_out|date:"d.m.Y" }}</td>
+      <td class="price">{{ booking.total_price|floatformat:0|intcomma }} ₽</td>
+      <td><span class="status status-{{ booking.status }}">{{ booking.get_status_display }}</span></td></tr>
+  {% empty %}<tr><td colspan="5" class="muted">Бронирований нет</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endblock %}

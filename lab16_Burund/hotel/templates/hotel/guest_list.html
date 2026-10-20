@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Гости{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Гости</h1>
+  {% if perms.hotel.add_guest %}<a class="button" href="{% url 'hotel:guest_create' %}">+ Новый гость</a>{% endif %}
+</div>
+<form class="filters" method="get"><input type="search" name="q" value="{{ request.GET.q }}" placeholder="ФИО, e-mail, телефон"><button>Найти</button></form>
+<table class="table">
+  <thead><tr><th>ФИО</th><th>E-mail</th><th>Телефон</th><th>Броней</th><th>Потрачено</th></tr></thead>
+  <tbody>
+  {% for guest in page_obj %}
+    <tr><td><a href="{{ guest.get_absolute_url }}">{{ guest.full_name }}</a></td><td>{{ guest.email }}</td>
+      <td>{{ guest.phone|default:"—" }}</td><td>{{ guest.bookings_total }}</td>
+      <td class="price">{{ guest.spent|default:0|floatformat:0|intcomma }} ₽</td></tr>
+  {% empty %}<tr><td colspan="5" class="muted">Гости не найдены</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% include "hotel/pagination.html" %}
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Главная{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Гостиница «Северная звезда»</h1>
+  <p>Система управления номерами, категориями, гостями и бронированиями.</p>
+  <p class="muted">
+    {% if user.is_authenticated %}
+      Вы вошли как <strong>{{ user.username }}</strong>
+      ({% if user.is_staff %}администратор{% else %}пользователь{% endif %}).
+    {% else %}
+      Вы не авторизованы — доступен просмотр и поиск номеров.
+    {% endif %}
+  </p>
+</section>
+<div class="stats">
+  <a class="stat" href="{% url 'hotel:room_list' %}"><b>{{ rooms_count }}</b>номеров</a>
+  <a class="stat" href="{% url 'hotel:roomtype_list' %}"><b>{{ types_count }}</b>категорий</a>
+  <div class="stat"><b>{{ free_today }}</b>свободно сегодня</div>
+  <div class="stat"><b>{{ bookings_count }}</b>активных броней</div>
+  <div class="stat"><b>{{ guests_count }}</b>гостей</div>
+</div>
+<h2>Категории номеров</h2>
+<div class="cards">
+  {% for type in room_types %}
+    <a class="card" href="{{ type.get_absolute_url }}">
+      <h3>{{ type.name }}</h3><p>{{ type.description }}</p>
+      <span class="muted">Номеров: {{ type.rooms_total }}</span>
+    </a>
+  {% endfor %}
+</div>
+<h2>Найти свободный номер</h2>
+<form class="filters" method="get" action="{% url 'hotel:room_list' %}">
+  <label>Заезд <input type="date" name="check_in" required></label>
+  <label>Выезд <input type="date" name="check_out" required></label>
+  <label>Гостей <input type="number" name="guests" min="1" value="2"></label>
+  <button type="submit">Найти</button>
+</form>
+{% endblock %}

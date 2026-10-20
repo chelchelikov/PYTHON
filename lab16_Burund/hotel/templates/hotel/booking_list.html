@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}{% if mine %}Мои бронирования{% else %}Бронирования{% endif %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{% if mine %}Мои бронирования{% else %}Бронирования{% endif %}</h1>
+  {% if not mine and perms.hotel.add_booking %}<a class="button" href="{% url 'hotel:booking_create' %}">+ Новая бронь</a>{% endif %}
+</div>
+{% if not mine %}
+<form class="filters" method="get">
+  <select name="status"><option value="">Все статусы</option>
+    {% for value, label in statuses %}<option value="{{ value }}" {% if value == status %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select><button>Показать</button>
+</form>
+{% endif %}
+<table class="table">
+  <thead><tr><th>№</th><th>Номер</th><th>Гость</th><th>Даты</th><th>Ночей</th><th>Стоимость</th><th>Статус</th></tr></thead>
+  <tbody>
+  {% for booking in object_list %}
+    <tr><td><a href="{{ booking.get_absolute_url }}">#{{ booking.pk }}</a></td>
+      <td><a href="{{ booking.room.get_absolute_url }}">№{{ booking.room.number }}</a></td>
+      <td>{{ booking.guest }}</td>
+      <td>{{ booking.check_in|date:"d.m.Y" }} — {{ booking.check_out|date:"d.m.Y" }}</td>
+      <td>{{ booking.nights }}</td>
+      <td class="price">{{ booking.total_price|floatformat:0|intcomma }} ₽</td>
+      <td><span class="status status-{{ booking.status }}">{{ booking.get_status_display }}</span></td></tr>
+  {% empty %}<tr><td colspan="7" class="muted">Бронирований нет</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% include "hotel/pagination.html" %}
+{% endblock %}

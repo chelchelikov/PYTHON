@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Бронь #{{ booking.pk }}{% endblock %}
+{% block content %}
+<h1>Бронирование #{{ booking.pk }} <span class="status status-{{ booking.status }}">{{ booking.get_status_display }}</span></h1>
+<dl class="detail-list">
+  <dt>Номер</dt><dd><a href="{{ booking.room.get_absolute_url }}">{{ booking.room }}</a></dd>
+  <dt>Гость</dt><dd>{% if perms.hotel.view_guest %}<a href="{{ booking.guest.get_absolute_url }}">{{ booking.guest }}</a>{% else %}{{ booking.guest }}{% endif %}</dd>
+  <dt>Даты</dt><dd>{{ booking.check_in|date:"d.m.Y" }} — {{ booking.check_out|date:"d.m.Y" }} ({{ booking.nights }} ноч.)</dd>
+  <dt>Гостей</dt><dd>{{ booking.guests_count }}</dd>
+  <dt>Стоимость</dt><dd class="price">{{ booking.total_price|floatformat:2|intcomma }} ₽</dd>
+  <dt>Создано</dt><dd>{{ booking.created_at|date:"d.m.Y H:i" }}</dd>
+</dl>
+{% if perms.hotel.change_booking %}<a class="button secondary" href="{% url 'hotel:booking_edit' booking.pk %}">Изменить</a>{% endif %}
+{% endblock %}

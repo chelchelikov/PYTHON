@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Статистика{% endblock %}
+{% block content %}
+<h1>Статистика</h1>
+<div class="stats">
+  <div class="stat"><b>{{ rooms_count }}</b>номеров всего</div>
+  <div class="stat"><b>{{ free_today }}</b>свободно сегодня</div>
+  <div class="stat"><b>{{ occupancy }}%</b>загрузка сегодня</div>
+  <div class="stat"><b>{{ avg_price|floatformat:0|intcomma }} ₽</b>средняя цена</div>
+  <div class="stat"><b>{{ capacity }}</b>мест всего</div>
+  <div class="stat"><b>{{ revenue|floatformat:0|intcomma }} ₽</b>сумма броней</div>
+  <div class="stat"><b>{{ leader.name|default:"—" }}</b>категория-лидер ({{ leader.bookings_total|default:0 }} броней)</div>
+  <div class="stat"><b>{{ cancelled }}</b>отменённых броней</div>
+</div>
+{% if has_maintenance %}<p class="muted">Есть номера на обслуживании.</p>{% endif %}
+<div class="columns">
+  <section>
+    <h2>По категориям</h2>
+    <table class="table"><thead><tr><th>Категория</th><th>Номеров</th><th>Средняя цена</th></tr></thead><tbody>
+    {% for type in by_type %}<tr><td>{{ type.name }}</td><td>{{ type.rooms_total }}</td>
+      <td>{{ type.avg_price|floatformat:0|intcomma|default:"—" }} ₽</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+  <section>
+    <h2>Лучшие гости</h2>
+    <ol>{% for guest in top_guests %}<li>{{ guest.full_name }} — {{ guest.spent|floatformat:0|intcomma }} ₽</li>{% endfor %}</ol>
+  </section>
+</div>
+{% endblock %}

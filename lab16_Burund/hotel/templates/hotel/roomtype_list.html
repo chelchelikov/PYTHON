@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Категории номеров{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Категории номеров</h1>
+  {% if perms.hotel.add_roomtype %}<a class="button" href="{% url 'hotel:roomtype_create' %}">+ Новая категория</a>{% endif %}
+</div>
+<table class="table">
+  <thead><tr><th>Категория</th><th>Описание</th><th>Номеров</th><th>Средняя цена</th></tr></thead>
+  <tbody>
+  {% for type in object_list %}
+    <tr><td><a href="{{ type.get_absolute_url }}">{{ type.name }}</a></td><td>{{ type.description }}</td>
+      <td>{{ type.rooms_total }}</td><td class="price">{{ type.avg_price|floatformat:0|intcomma|default:"—" }} ₽</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

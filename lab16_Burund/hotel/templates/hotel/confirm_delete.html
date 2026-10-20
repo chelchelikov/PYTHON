@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Удаление{% endblock %}
+{% block content %}
+<h1>Удаление</h1>
+<p>Вы действительно хотите удалить объект «{{ object }}»?</p>
+<form method="post" class="buttons">
+  {% csrf_token %}
+  <button class="danger" type="submit">Да, удалить</button>
+  <a href="{{ object.get_absolute_url }}">Отмена</a>
+</form>
+{% endblock %}

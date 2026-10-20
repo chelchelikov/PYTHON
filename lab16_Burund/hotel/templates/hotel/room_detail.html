@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Номер {{ room.number }}{% endblock %}
+{% block content %}
+<p><a href="{% url 'hotel:room_list' %}">← Все номера</a></p>
+<div class="columns">
+  <article class="detail">
+    <h1>Номер {{ room.number }}</h1>
+    <p>Категория: <a href="{{ room.room_type.get_absolute_url }}">{{ room.room_type.name }}</a></p>
+    <dl>
+      <dt>Этаж</dt><dd>{{ room.floor }}</dd>
+      <dt>Вместимость</dt><dd>{{ room.capacity }} чел.</dd>
+      <dt>Цена</dt><dd class="price">{{ room.price|floatformat:2|intcomma }} ₽ / ночь</dd>
+      <dt>Удобства</dt><dd>{% for a in room.amenities.all %}<span class="tag">{{ a.name }}</span>{% empty %}—{% endfor %}</dd>
+      <dt>Состояние</dt><dd>{% if room.is_under_maintenance %}на обслуживании{% else %}доступен{% endif %}</dd>
+    </dl>
+    {% if room.description %}<p>{{ room.description }}</p>{% endif %}
+    <div class="buttons">
+      {% if perms.hotel.change_room %}<a class="button secondary" href="{% url 'hotel:room_edit' room.pk %}">Изменить</a>{% endif %}
+      {% if perms.hotel.add_booking %}<a class="button secondary" href="{% url 'hotel:booking_create' %}?room={{ room.pk }}">Бронь для гостя</a>{% endif %}
+      {% if perms.hotel.delete_room %}<a class="button danger" href="{% url 'hotel:room_delete' room.pk %}">Удалить</a>{% endif %}
+    </div>
+  </article>
+  <aside>
+    <h2>Забронировать</h2>
+    {% if room.is_under_maintenance %}
+      <p class="muted">Номер временно недоступен.</p>
+    {% elif user.is_authenticated %}
+      <form class="form" method="post" action="{% url 'hotel:room_book' room.pk %}">
+        {% csrf_token %}
+        {% for field in booking_form %}<label>{{ field.label }} {{ field }}</label>{% endfor %}
+        <button type="submit">Забронировать</button>
+      </form>
+    {% else %}
+      <p><a href="{% url 'login' %}?next={{ request.path|urlencode }}">Войдите</a>, чтобы забронировать номер.</p>
+    {% endif %}
+    <h2>Занятые даты</h2>
+    <ul>
+      {% for booking in upcoming %}
+        <li>{{ booking.check_in|date:"d.m.Y" }} — {{ booking.check_out|date:"d.m.Y" }}
+          {% if perms.hotel.view_booking %}(<a href="{{ booking.get_absolute_url }}">{{ booking.guest }}</a>){% endif %}</li>
+      {% empty %}<li class="muted">Ближайших бронирований нет</li>{% endfor %}
+    </ul>
+  </aside>
+</div>
+{% if similar %}
+<h2>Другие номера категории «{{ room.room_type.name }}»</h2>
+<div class="cards">
+  {% for other in similar %}
+    <a class="card" href="{{ other.get_absolute_url }}"><h3>№{{ other.number }}</h3>
+      <span class="price">{{ other.price|floatformat:0|intcomma }} ₽</span></a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

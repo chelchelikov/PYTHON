@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}{{ roomtype.name }}{% endblock %}
+{% block content %}
+<p><a href="{% url 'hotel:roomtype_list' %}">← Категории</a></p>
+<h1>{{ roomtype.name }}</h1>
+<p>{{ roomtype.description }}</p>
+<p class="muted">Типовая вместимость: {{ roomtype.base_capacity }} чел.</p>
+<h2>Номера категории</h2>
+<div class="cards">
+  {% for room in roomtype.rooms.all %}
+    <a class="card" href="{{ room.get_absolute_url }}"><h3>№{{ room.number }}</h3>
+      <p>Этаж {{ room.floor }}, мест {{ room.capacity }}</p>
+      <span class="price">{{ room.price|floatformat:0|intcomma }} ₽</span></a>
+  {% empty %}<p class="muted">Номеров нет</p>{% endfor %}
+</div>
+{% endblock %}
