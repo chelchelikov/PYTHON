@@ -1,0 +1,12 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "."]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["B008"]  # Depends(...) в аргументах — штатный приём FastAPI
+
+[tool.coverage.run]
+source = ["src/app"]
+omit = ["src/app/worker.py"]  # цикл фонового процесса проверяется интеграционно (RabbitMQ)
